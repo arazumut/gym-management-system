@@ -7,7 +7,9 @@ import {randomUUID} from "node:crypto";
 const API_KEY = process.env.NEXT_PUBLIC_MAILGUN_API_KEY || "";
 const MAILGUN_DOMAIN = process.env.NEXT_PUBLIC_MAILGUN_DOMAIN || "";
 const mailgun = new Mailgun(formData);
-const client = mailgun.client({username: 'api', key: API_KEY});
+
+// API anahtarı boş ise istemci oluşturma
+const client = API_KEY ? mailgun.client({username: 'api', key: API_KEY}) : null;
 
 export async function POST(req: Request) {
     try {
@@ -16,6 +18,11 @@ export async function POST(req: Request) {
 
         if (!email) {
             return NextResponse.json({error: "Email is required"}, {status: 400});
+        }
+
+        // API anahtarı veya domain yoksa hata döndür
+        if (!API_KEY || !MAILGUN_DOMAIN || !client) {
+            return NextResponse.json({error: "Email service is not configured properly"}, {status: 500});
         }
 
         const user = await prismadb.user.findUnique({where: {email}});

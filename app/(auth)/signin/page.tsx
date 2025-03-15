@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import Loader from "@/app/components/Loader/Loader";
-import { useSession, signIn } from "next-auth/react";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { FieldValues, SubmitHandler, useForm } from "react-hook-form";
+import axios from "axios";
 import {
   Grid,
   Link,
@@ -21,9 +21,11 @@ import {
 } from "@mui/material/";
 
 const defaultTheme = createTheme();
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api";
 
 export default function SignInPage() {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const router = useRouter();
 
   const [testUser, setTestUser] = useState<{
     email: string;
@@ -33,48 +35,63 @@ export default function SignInPage() {
     password: "",
   });
 
-  const { status } = useSession();
-
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
   } = useForm<FieldValues>({
     defaultValues: {
       email: "",
       password: "",
     },
   });
-  const router = useRouter();
 
-  const handleSignIn: SubmitHandler<FieldValues> = (data) => {
+  // Test kullanıcı bilgilerini form alanlarına yansıt
+  useEffect(() => {
+    if (testUser.email) {
+      setValue("email", testUser.email);
+    }
+    if (testUser.password) {
+      setValue("password", testUser.password);
+    }
+  }, [testUser, setValue]);
+
+  // Kimlik doğrulama kontrolünü kaldırdık
+  // Doğrudan ana sayfaya yönlendirme yapmıyoruz
+
+  const handleSignIn: SubmitHandler<FieldValues> = async (data) => {
     setIsSubmitting(true);
-    signIn("credentials", {
-      ...data,
-      redirect: false,
-    })
-      .then((callback) => {
-        if (callback?.ok && callback?.error === undefined) {
-          toast.success("Logged in successfully!");
-          router.refresh();
-        }
-
-        if (callback?.error) {
-          toast.error(callback.error);
-        }
-      })
-      .finally(() => {
-        setIsSubmitting(false);
-      });
+    try {
+      console.log('Giriş bilgileri:', { email: data.email });
+      
+      // Kullanıcı bilgilerini localStorage'a kaydet (kimlik doğrulama olmadan)
+      localStorage.setItem('user', JSON.stringify({
+        id: 1,
+        email: data.email,
+        role: data.email.includes('admin') ? 'admin' : 
+              data.email.includes('trainer') ? 'trainer' : 'user'
+      }));
+      
+      toast.success("Giriş başarılı!");
+      router.push('/');
+    } catch (error: any) {
+      console.error("Giriş hatası:", error);
+      toast.error("Giriş başarısız. Lütfen bilgilerinizi kontrol edin.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  if (status === "loading") {
-    return <Loader />;
-  }
-
-  if (status === "authenticated") {
-    return redirect("/");
-  }
+  // Otomatik giriş butonu - doğrudan ana sayfaya gider
+  const handleAutoLogin = () => {
+    localStorage.setItem('user', JSON.stringify({
+      id: 1,
+      email: "user@example.com",
+      role: "user"
+    }));
+    router.push('/');
+  };
 
   return (
     <ThemeProvider theme={defaultTheme}>
@@ -92,8 +109,20 @@ export default function SignInPage() {
             <LockOutlinedIcon />
           </Avatar>
           <Typography component="h1" variant="h5">
-            Sign in
+            Giriş Yap
           </Typography>
+          
+          {/* Otomatik giriş butonu */}
+          <Button
+            onClick={handleAutoLogin}
+            fullWidth
+            variant="contained"
+            color="success"
+            sx={{ mt: 3, mb: 2 }}
+          >
+            Kimlik Doğrulama Olmadan Giriş Yap
+          </Button>
+          
           <Box
             component="form"
             noValidate
@@ -102,15 +131,18 @@ export default function SignInPage() {
           >
             <TextField
               margin="normal"
-              value={testUser.email}
               required
               fullWidth
               id="email"
-              label="Email Address"
+              label="E-posta Adresi"
               autoComplete="email"
               autoFocus
               {...register("email", {
-                required: "This field is required",
+                required: "Bu alan zorunludur",
+                pattern: {
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  message: "Geçersiz e-posta adresi",
+                },
               })}
               error={!!errors?.email?.message}
               helperText={
@@ -122,15 +154,14 @@ export default function SignInPage() {
 
             <TextField
               margin="normal"
-              value={testUser.password}
               required
               fullWidth
-              label="Password"
+              label="Şifre"
               type="password"
               id="password"
               autoComplete="current-password"
               {...register("password", {
-                required: "This field is required",
+                required: "Bu alan zorunludur",
               })}
               error={!!errors?.password?.message}
               helperText={
@@ -143,7 +174,7 @@ export default function SignInPage() {
               <Grid container>
                     <Grid item xs ml={1}>
                         <Link href="/forgot-password" variant="body2">
-                            Forgot password?
+                            Şifremi unuttum?
                         </Link>
                     </Grid>
                 </Grid>
@@ -153,8 +184,9 @@ export default function SignInPage() {
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
+              disabled={isSubmitting}
             >
-              {isSubmitting ? "Signing in..." : "Sign in"}
+              {isSubmitting ? "Giriş yapılıyor..." : "Giriş Yap"}
             </Button>
           </Box>
         </Box>
@@ -174,38 +206,38 @@ export default function SignInPage() {
           <Button
             onClick={() => {
               setTestUser({
-                email: "rjabid36@gmail.com",
-                password: "123456Abid",
+                email: "admin@example.com",
+                password: "admin123",
               });
             }}
             size={"small"}
             variant="contained"
           >
-            Role as Admin
+            Admin Olarak Giriş
           </Button>
           <Button
             onClick={() => {
               setTestUser({
-                email: "test1@gmail.com",
-                password: "123456Abid",
+                email: "trainer@example.com",
+                password: "trainer123",
               });
             }}
             size={"small"}
             variant="contained"
           >
-            Role as Trainer
+            Eğitmen Olarak Giriş
           </Button>
           <Button
             onClick={() => {
               setTestUser({
-                email: "test2@gmail.com",
-                password: "123456Abid",
+                email: "user@example.com",
+                password: "user123",
               });
             }}
             size={"small"}
             variant="contained"
           >
-            Role as User
+            Kullanıcı Olarak Giriş
           </Button>
         </Box>
       

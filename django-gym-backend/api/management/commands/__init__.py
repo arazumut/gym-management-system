@@ -1,0 +1,1 @@
+# Django yönetim komutları paketi 

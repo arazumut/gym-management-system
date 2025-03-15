@@ -4,7 +4,6 @@ import { Inter } from "next/font/google";
 
 import ClientOnly from "./components/ClientOnly/page";
 import ToasterProvider from "@/providers/toast-provider";
-import AuthProvider from "./context/AuthProvider/AuthProvider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,7 +22,7 @@ export default async function RootLayout({
       <body className={inter.className}>
         <ClientOnly>
           <ToasterProvider />
-          <AuthProvider>{children}</AuthProvider>
+          {children}
         </ClientOnly>
       </body>
     </html>

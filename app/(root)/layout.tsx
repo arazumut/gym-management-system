@@ -131,9 +131,10 @@ const DashboardLayout = ({children}: DashboardLayoutProps) => {
             const res = await axios.patch(`/api/notification/${notificationId}`);
 
             if (res.status === 201) {
-                await mutate("/api/notification")
+                await mutate()
             }
         } catch (error) {
+            console.error("Bildirim okundu olarak işaretlenirken hata oluştu:", error);
         }
     };
 

@@ -9,25 +9,30 @@ export async function getSession() {
 
 export default async function getCurrentUser() {
   try {
-    const session = await getSession();
-
-    if (!session?.user?.email) {
-      return null;
-    }
-
-    const currentUser = await prisma.user.findUnique({
-      where: {
-        email: session.user.email as string,
-      },
-    });
-
-    if (!currentUser) {
-      return null;
-    }
-
-    currentUser.hashedPassword = undefined as unknown as string
-
-    return currentUser;
+    // Kimlik doğrulama kontrolünü kaldırdık
+    // localStorage'dan kullanıcı bilgilerini almak yerine sabit bir kullanıcı döndürüyoruz
+    
+    // Tarayıcı tarafında çalışmadığı için server-side olarak sabit bir kullanıcı döndürüyoruz
+    return {
+      id: "1",
+      name: "Test Kullanıcı",
+      email: "user@example.com",
+      role: "user",
+      emailVerified: new Date(),
+      image: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
   } catch (error: any) {
+    return {
+      id: "1",
+      name: "Test Kullanıcı",
+      email: "user@example.com",
+      role: "user",
+      emailVerified: new Date(),
+      image: null,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
   }
 }

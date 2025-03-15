@@ -58,9 +58,9 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ value, setValue }) => {
               alignItems: "center",
               gap: 4,
               color: "rgba(82, 82, 82, 1)",
-              userSelect: open ? "all" : "none", // Allow text selection when the upload widget is open
+              userSelect: "all", // Allow text selection when the upload widget is open
             }}
-            onClick={() => open && open?.()} // Trigger the Cloudinary widget when clicked
+            onClick={() => open()} // Trigger the Cloudinary widget when clicked
           >
             {/* Cloud upload icon */}
             <CloudUploadIcon />
